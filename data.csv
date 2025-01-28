@@ -1,0 +1,15 @@
+database_name,table_name,column_name
+DB,TB                ,F1
+DB,TB                ,F2
+DB,TB                ,F3
+DB,TB1                ,F1
+DB,TB1                ,F2
+DB,TB1                ,F3
+DB,ZDP_DVL_H1_DB_SOC,F3
+DB1,TB                ,F1
+DB1,TB                ,F2
+DB1,TB                ,F3
+DB1,TB1                ,F1
+DB1,TB1                ,F2
+DB2,TB1                ,F3
+DB2,ZDP_DVL_H1_DB_SOC,F3
