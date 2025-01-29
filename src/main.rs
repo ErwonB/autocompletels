@@ -66,7 +66,7 @@ fn main() {
         let data = DATA.lock().unwrap();
 
         if db_names.is_empty() {
-            eprintln!("Error: At least one --db argument must be provided.");
+            println!("{}", data.keys().cloned().collect::<Vec<_>>().join(","));
             return;
         }
 
