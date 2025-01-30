@@ -1,0 +1,47 @@
+DEFINE JOB EXPORT_DATA
+DESCRIPTION 'Export data from Teradata to a file'
+(
+    DEFINE SCHEMA FILE_SCHEMA
+    (
+        full_line varchar(500)
+    );
+
+    DEFINE OPERATOR SQL_SELECTOR
+    TYPE SELECTOR
+    SCHEMA FILE_SCHEMA
+    ATTRIBUTES
+    (
+        VARCHAR SelectStmt = 'LOCK ROW FOR ACCESS
+        SELECT
+            trim(c.databasename) || '','' || trim(c.tablename) || '','' ||    trim(c.columnname)
+        FROM dbc.tablesv t
+        INNER JOIN dbc.columnsv c
+        ON t.databasename = c.databasename
+        AND t.tablename = c.tablename
+        where 1=1
+        and t.tablekind IN (''T'', ''V'', ''M'')
+        ORDER BY c.databasename, c.tablename, c.columnid;',
+        VARCHAR PrivateLogName = 'selector_log',
+        VARCHAR UserName = '***',
+        VARCHAR UserPassword = '***',
+        VARCHAR TdpId = '***',
+        VARCHAR ReportModeOn = 'Y'
+    );
+
+    DEFINE OPERATOR FILE_WRITER
+    TYPE DATACONNECTOR CONSUMER
+    SCHEMA *
+    ATTRIBUTES
+    (
+        VARCHAR PrivateLogName = 'dataconnector_log',
+        VARCHAR DirectoryPath = '***',
+        VARCHAR FileName = 'data_tmp.csv',
+        VARCHAR Format = 'DELIMITED',
+        VARCHAR OpenMode = 'Write',
+        VARCHAR TextDelimiter = ','
+    );
+
+    APPLY TO OPERATOR (FILE_WRITER)
+    SELECT * FROM OPERATOR (SQL_SELECTOR);
+);
+
