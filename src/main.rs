@@ -41,9 +41,9 @@ fn load_data_with_db(path: &str, db: &str) -> HashMap<String, HashMap<String, Ve
         let col_name = record.column_name.trim().to_string();
 
         data.entry(db_name)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(tb_name)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(col_name);
     }
 
@@ -55,33 +55,49 @@ fn main() {
         .version("1.0")
         .author("Erwan B")
         .about("CLI tool for database autocompletion")
-        .arg(Arg::new("path")
-            .long("path")
-            .action(ArgAction::Set)
-            .required(true)
-            .help("Path to the data file"))
-        .arg(Arg::new("init")
-            .long("init")
-            .action(ArgAction::SetTrue)
-            .help("Initialize the CSV file"))
-        .arg(Arg::new("db")
-            .long("db")
-            .action(ArgAction::Append)
-            .help("Database name"))
-        .arg(Arg::new("tb")
-            .long("tb")
-            .action(ArgAction::Append)
-            .help("Table name"))
+        .arg(
+            Arg::new("path")
+                .long("path")
+                .action(ArgAction::Set)
+                .required(true)
+                .help("Path to the data file"),
+        )
+        .arg(
+            Arg::new("init")
+                .long("init")
+                .action(ArgAction::SetTrue)
+                .help("Initialize the CSV file"),
+        )
+        .arg(
+            Arg::new("db")
+                .long("db")
+                .action(ArgAction::Append)
+                .help("Database name"),
+        )
+        .arg(
+            Arg::new("tb")
+                .long("tb")
+                .action(ArgAction::Append)
+                .help("Table name"),
+        )
         .get_matches();
 
     if matches.get_flag("init") {
         // Call the sh process to create the CSV file
-        std::process::Command::new("output_tree.sh").output().expect("Failed to execute process");
+        std::process::Command::new("output_tree.sh")
+            .output()
+            .expect("Failed to execute process");
         println!("CSV file initialized.");
     } else {
         let path: String = matches.get_one::<String>("path").unwrap().to_string();
-        let db_names: Vec<_> = matches.get_many::<String>("db").unwrap_or_default().collect();
-        let tb_names: Vec<_> = matches.get_many::<String>("tb").unwrap_or_default().collect();
+        let db_names: Vec<_> = matches
+            .get_many::<String>("db")
+            .unwrap_or_default()
+            .collect();
+        let tb_names: Vec<_> = matches
+            .get_many::<String>("tb")
+            .unwrap_or_default()
+            .collect();
 
         if db_names.is_empty() {
             let data = load_data(&path);
@@ -89,37 +105,38 @@ fn main() {
             // for item in data {
             //     println!("{}", item);
             // }
-        } else {
-            if tb_names.is_empty() {
-                for db_name in db_names {
-                    let data = load_data_with_db(&path, db_name);
-                    if let Some(tables) = data.get(db_name) {
-                        println!("{}", tables.keys().cloned().collect::<Vec<_>>().join(","));
-                    } else {
-                        println!("Database {} not found.", db_name);
-                    }
+        } else if tb_names.is_empty() {
+            for db_name in db_names {
+                let data = load_data_with_db(&path, db_name);
+                if let Some(tables) = data.get(db_name) {
+                    println!("{}", tables.keys().cloned().collect::<Vec<_>>().join(","));
+                } else {
+                    println!("Database {} not found.", db_name);
                 }
-            } else {
-                if db_names.len() != tb_names.len() {
-                    eprintln!("Error: The number of --db and --tb arguments must be the same.");
-                    return;
-                }
-
-                let mut results = Vec::new();
-                for (db_name, tb_name) in db_names.iter().zip(tb_names.iter()) {
-                    let data = load_data_with_db(&path, db_name);
-                    if let Some(tables) = data.get(*db_name) {
-                        if let Some(columns) = tables.get(*tb_name) {
-                            results.push(columns.join(","));
-                        } else {
-                            results.push(format!("Table {} not found in database {}.", tb_name, db_name));
-                        }
-                    } else {
-                        results.push(format!("Database {} not found.", db_name));
-                    }
-                }
-                println!("{}", results.join(","));
             }
+        } else {
+            if db_names.len() != tb_names.len() {
+                eprintln!("Error: The number of --db and --tb arguments must be the same.");
+                return;
+            }
+
+            let mut results = Vec::new();
+            for (db_name, tb_name) in db_names.iter().zip(tb_names.iter()) {
+                let data = load_data_with_db(&path, db_name);
+                if let Some(tables) = data.get(*db_name) {
+                    if let Some(columns) = tables.get(*tb_name) {
+                        results.push(columns.join(","));
+                    } else {
+                        results.push(format!(
+                            "Table {} not found in database {}.",
+                            tb_name, db_name
+                        ));
+                    }
+                } else {
+                    results.push(format!("Database {} not found.", db_name));
+                }
+            }
+            println!("{}", results.join(","));
         }
     }
 }
